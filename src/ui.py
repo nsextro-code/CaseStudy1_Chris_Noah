@@ -62,7 +62,7 @@ def show_users():
     
     st.dataframe(
         dummy_users,
-        use_container_width=True,
+        width='stretch',
         hide_index=True
     )
     
@@ -176,7 +176,7 @@ def show_devices():
         }
     ])
     
-    st.dataframe(dummy_devices, use_container_width=True, hide_index=True)
+    st.dataframe(dummy_devices, width='stretch', hide_index=True)
     st.caption(f"📊 Gesamt: {len(dummy_devices)} Geräte")
 
 
@@ -253,7 +253,7 @@ def show_reservations():
         }
     ])
     
-    st.dataframe(dummy_reservations, use_container_width=True, hide_index=True)
+    st.dataframe(dummy_reservations, width='stretch', hide_index=True)
     st.caption(f"📊 Gesamt: {len(dummy_reservations)} aktive Reservierungen")
     
     # Aktionen
@@ -296,7 +296,7 @@ def show_maintenance():
         }
     ])
     
-    st.dataframe(dummy_maintenance, use_container_width=True, hide_index=True)
+    st.dataframe(dummy_maintenance, width='stretch', hide_index=True)
     st.caption(f"📊 Gesamt: {len(dummy_maintenance)} anstehende Wartungen")
     
     st.markdown("---")
