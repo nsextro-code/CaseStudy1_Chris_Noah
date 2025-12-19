@@ -6,7 +6,7 @@ Haupteinstiegspunkt der Anwendung
 import streamlit as st
 from src.ui import show_users, show_devices, show_reservations, show_maintenance
 
-# Seiten-Konfiguration (muss als erstes kommen!)
+# Seiten-Konfiguration
 st.set_page_config(
     page_title="Geräteverwaltung",
     page_icon="🖨️",
@@ -14,11 +14,11 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Titel der Anwendung
-st.title("🏫 Geräteverwaltungssystem")
+# Header
+st.title("Geräteverwaltungssystem für Hochschulen")
 st.markdown("---")
 
-# Sidebar Navigation
+# Sidebar
 st.sidebar.title("📋 Navigation")
 st.sidebar.markdown("Wählen Sie einen Bereich:")
 
@@ -36,7 +36,7 @@ page = st.sidebar.radio(
 st.sidebar.markdown("---")
 st.sidebar.info("💡 **Hinweis:** Alle Änderungen werden automatisch gespeichert.")
 
-# Page Routing - Zeigt die ausgewählte Seite an
+# Page Routing section based 
 if page == "👥 Nutzerverwaltung":
     show_users()
 
@@ -51,4 +51,4 @@ elif page == "🔧 Wartungs-Management":
 
 # Footer
 st.sidebar.markdown("---")
-st.sidebar.caption("Geräteverwaltung v1.0 | MCI 2024")
+st.sidebar.caption("Geräteverwaltung v1.0 ")
