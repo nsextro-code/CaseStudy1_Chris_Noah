@@ -24,3 +24,10 @@ streamlit run main.py
 ## Team
 - Chris
 - Noah
+
+## UI Mockup
+Der folgende Screenshot zeigt das UI-Mockup der Case Study I  
+
+![UI Mockup – Nutzer anlegen](screenshots/ui_mockup_nutzer_anlegen.png)
+
+
