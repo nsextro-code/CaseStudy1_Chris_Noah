@@ -52,7 +52,7 @@ def show_users():
     # Alle Nutzer anzeigen
     st.subheader("Alle Nutzer")
     
-    # DUMMY-DATEN (später durch echte Datenbank ersetzen)
+    # DUMMY-DATEN 
     dummy_users = pd.DataFrame([
         {"Name": "Max Mustermann", "E-Mail": "max.mustermann@mci.edu"},
         {"Name": "Anna Schmidt", "E-Mail": "anna.schmidt@mci.edu"},
@@ -66,7 +66,7 @@ def show_users():
         hide_index=True
     )
     
-    st.caption(f"📊 Gesamt: {len(dummy_users)} Nutzer")
+    st.caption(f"Gesamt: {len(dummy_users)} Nutzer")
     
     # Aktionen
     st.markdown("---")
