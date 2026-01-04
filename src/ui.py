@@ -41,11 +41,11 @@ def show_users():
         
         if submitted:
             if not email or not name:
-            st.error("❌ Bitte alle Pflichtfelder (*) ausfüllen!")
+                st.error("❌ Bitte alle Pflichtfelder (*) ausfüllen!")
             return
 
             if "@" not in email:
-            st.error("❌ Ungültige E-Mail-Adresse!")
+                st.error("❌ Ungültige E-Mail-Adresse!")
         return
 
     db = Database()
