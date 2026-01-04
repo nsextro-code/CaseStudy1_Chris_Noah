@@ -62,16 +62,6 @@ def show_users():
     else:
         st.info("Noch keine Nutzer vorhanden.")
     st.markdown("---")
-    
-    # Alle Nutzer anzeigen
-    st.subheader("Alle Nutzer")
-    
-    st.dataframe(
-        users,
-        width='stretch',
-        hide_index=True
-    )
-    
     st.caption(f"Gesamt: {len(users)} Nutzer")
     
     # Aktionen
