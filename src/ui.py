@@ -12,68 +12,55 @@ from src.database import Database
 
 # ==================== USE CASE 1: NUTZERVERWALTUNG ====================
 def show_users():
-    """
-    UI für Nutzerverwaltung
-    """
     st.header("👥 Nutzerverwaltung")
-    
-    # Neuen Nutzer anlegen
     st.subheader("Neuen Nutzer anlegen")
-    
+
     with st.form("user_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
-        
+
         with col1:
             email = st.text_input(
                 "E-Mail-Adresse *",
                 placeholder="beispiel@mci.edu",
                 help="Die E-Mail dient als eindeutige ID"
             )
-        
+
         with col2:
             name = st.text_input(
                 "Name *",
                 placeholder="Max Mustermann",
                 help="Vollständiger Name des Nutzers"
             )
-        
-        submitted = st.form_submit_button("✅ Nutzer anlegen", width="stretch")
-        
+
+        submitted = st.form_submit_button("✅ Nutzer anlegen", use_container_width=True)
+
         if submitted:
             if not email or not name:
                 st.error("❌ Bitte alle Pflichtfelder (*) ausfüllen!")
-            return
-
-            if "@" not in email:
+            elif "@" not in email:
                 st.error("❌ Ungültige E-Mail-Adresse!")
-        return
+            else:
+                db = Database()
 
-    db = Database()
+                existing_user = db.users.search(lambda u: u.get("email") == email)
 
-    # Prüfen, ob Nutzer schon existiert
-    existing_user = db.users.search(lambda u: u["email"] == email)
+                if existing_user:
+                    st.warning("⚠️ Nutzer mit dieser E-Mail existiert bereits.")
+                else:
+                    db.users.insert({"email": email, "name": name})
+                    st.success(f"✅ Nutzer **{name}** mit E-Mail **{email}** wurde angelegt!")
+                    st.info("💾 Daten wurden in der Datenbank gespeichert")
 
-    if existing_user:
-        st.warning("⚠️ Nutzer mit dieser E-Mail existiert bereits.")
-    else:
-        db.users.insert({
-            "email": email,
-            "name": name
-        })
-        st.success(f"✅ Nutzer **{name}** mit E-Mail **{email}** wurde angelegt!")
-        st.info("💾 Daten wurden in der Datenbank gespeichert")
-
-
+    st.markdown("---")
     st.subheader("📋 Alle Nutzer")
 
     db = Database()
     users = db.users.all()
 
     if users:
-        st.dataframe(users)
+        st.dataframe(users, use_container_width=True)
     else:
         st.info("Noch keine Nutzer vorhanden.")
-
     st.markdown("---")
     
     # Alle Nutzer anzeigen
