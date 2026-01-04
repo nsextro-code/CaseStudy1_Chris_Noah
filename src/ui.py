@@ -6,6 +6,8 @@ Enthält alle UI-Funktionen für die 4 Use Cases
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+from src.database import Database
+
 
 
 # ==================== USE CASE 1: NUTZERVERWALTUNG ====================
@@ -38,14 +40,28 @@ def show_users():
         submitted = st.form_submit_button("✅ Nutzer anlegen", width="stretch")
         
         if submitted:
-            if email and name:
-                if "@" in email:
-                    st.success(f"✅ Nutzer **{name}** mit E-Mail **{email}** wurde angelegt!")
-                    st.info("ℹ️ Daten wurden gespeichert")
-                else:
-                    st.error("❌ Ungültige E-Mail-Adresse!")
-            else:
-                st.error("❌ Bitte alle Pflichtfelder (*) ausfüllen!")
+    if not email or not name:
+        st.error("❌ Bitte alle Pflichtfelder (*) ausfüllen!")
+        return
+
+    if "@" not in email:
+        st.error("❌ Ungültige E-Mail-Adresse!")
+        return
+
+    db = Database()
+
+    # Prüfen, ob Nutzer schon existiert
+    existing_user = db.users.search(lambda u: u["email"] == email)
+
+    if existing_user:
+        st.warning("⚠️ Nutzer mit dieser E-Mail existiert bereits.")
+    else:
+        db.users.insert({
+            "email": email,
+            "name": name
+        })
+        st.success(f"✅ Nutzer **{name}** mit E-Mail **{email}** wurde angelegt!")
+        st.info("💾 Daten wurden in der Datenbank gespeichert")
     
     st.markdown("---")
     
