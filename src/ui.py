@@ -62,7 +62,18 @@ def show_users():
         })
         st.success(f"✅ Nutzer **{name}** mit E-Mail **{email}** wurde angelegt!")
         st.info("💾 Daten wurden in der Datenbank gespeichert")
-    
+
+
+    st.subheader("📋 Alle Nutzer")
+
+    db = Database()
+    users = db.users.all()
+
+    if users:
+        st.dataframe(users)
+    else:
+        st.info("Noch keine Nutzer vorhanden.")
+
     st.markdown("---")
     
     # Alle Nutzer anzeigen
