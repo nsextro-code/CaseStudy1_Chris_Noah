@@ -8,8 +8,6 @@ import pandas as pd
 from datetime import datetime
 from src.database import Database
 
-
-
 # ==================== USE CASE 1: NUTZERVERWALTUNG ====================
 def show_users():
     st.header("👥 Nutzerverwaltung")
@@ -92,6 +90,10 @@ def show_devices():
     
     st.subheader("Neues Gerät anlegen")
     
+    db = Database()
+    users = db.users.all()
+    user_emails = [u.get("email") for u in users] if users else []
+
     with st.form("device_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
         
@@ -106,11 +108,21 @@ def show_devices():
                 "Gerätename *",
                 placeholder="3D-Drucker Prusa MK4"
             )
-            responsible = st.selectbox(
-                "Verantwortliche Person *",
-                ["Max Mustermann", "Anna Schmidt", "Peter Huber", "Lisa Müller"],
-                help="Wählen Sie einen bestehenden Nutzer aus"
-            )
+            if user_emails:
+                responsible = st.selectbox(
+                    "Verantwortliche Person (E-Mail) *",
+                    user_emails,
+                    help="Wählen Sie einen bestehenden Nutzer aus"
+                )
+            else:
+                responsible = st.text_input(
+                    "Verantwortliche Person (E-Mail) *",
+                    placeholder="Bitte zuerst Nutzer anlegen",
+                    help="Es existieren noch keine Nutzer in der Datenbank."
+                )
+                st.warning("⚠️ Noch keine Nutzer vorhanden – bitte zuerst in der Nutzerverwaltung einen Nutzer anlegen.")
+
+
             end_of_life = st.date_input(
                 "End-of-Life Datum *",
                 help="Datum ab welchem das Gerät nicht mehr gewartet wird"
@@ -137,43 +149,57 @@ def show_devices():
         
         submitted = st.form_submit_button("✅ Gerät anlegen", width="stretch")
         
-        if submitted:
-            if device_name:
-                st.success(f"✅ Gerät **{device_name}** mit ID **{device_id}** wurde angelegt!")
-                st.info("ℹ️ Daten wurden gespeichert")
-            else:
+         if submitted:
+            # Pflichtfelder prüfen
+            if not device_name or not responsible or not end_of_life:
                 st.error("❌ Bitte alle Pflichtfelder (*) ausfüllen!")
+            else:
+                # Device-ID prüfen (darf nicht doppelt sein)
+                existing = db.devices.search(lambda d: int(d.get("device_id", -1)) == int(device_id))
+                if existing:
+                    st.warning("⚠️ Ein Gerät mit dieser Inventarnummer existiert bereits.")
+                else:
+                    # nächste Wartung berechnen (optional, aber nice)
+                    next_maintenance = first_maintenance + timedelta(days=int(maintenance_interval))
+
+                    db.devices.insert({
+                        "device_id": int(device_id),
+                        "name": device_name.strip(),
+                        "responsible_email": responsible.strip().lower(),
+                        "end_of_life": end_of_life.isoformat(),
+                        "first_maintenance": first_maintenance.isoformat(),
+                        "maintenance_interval_days": int(maintenance_interval),
+                        "maintenance_cost_eur": float(maintenance_cost),
+                        "next_maintenance": next_maintenance.isoformat(),
+                        "created_at": datetime.now().isoformat(timespec="seconds"),
+                        "last_update": datetime.now().isoformat(timespec="seconds")
+                    })
+
+                    st.success(f"✅ Gerät **{device_name}** mit ID **{int(device_id)}** wurde gespeichert!")
+                    st.info("💾 Daten wurden in der Datenbank gespeichert")
+
     
     st.markdown("---")
     st.subheader("Alle Geräte")
     
     # DUMMY-DATEN (später durch echte Datenbank ersetzen)
-    dummy_devices = pd.DataFrame([
-        {
-            "ID": 1,
-            "Name": "3D-Drucker Prusa",
-            "Verantwortlich": "Max Mustermann",
-            "Nächste Wartung": "2025-03-15",
-            "Wartungskosten": "150 €"
-        },
-        {
-            "ID": 2,
-            "Name": "Laser-Cutter",
-            "Verantwortlich": "Anna Schmidt",
-            "Nächste Wartung": "2025-02-28",
-            "Wartungskosten": "200 €"
-        },
-        {
-            "ID": 3,
-            "Name": "CNC-Fräse",
-            "Verantwortlich": "Peter Huber",
-            "Nächste Wartung": "2025-04-10",
-            "Wartungskosten": "300 €"
-        }
-    ])
-    
-    st.dataframe(dummy_devices, width='stretch', hide_index=True)
-    st.caption(f"📊 Gesamt: {len(dummy_devices)} Geräte")
+    devices = db.devices.all()
+    if devices:
+        df = pd.DataFrame(devices)
+
+        # optional: hübschere Spaltenreihenfolge, falls vorhanden
+        preferred_cols = [
+            "device_id", "name", "responsible_email",
+            "next_maintenance", "maintenance_cost_eur", "end_of_life"
+        ]
+        cols = [c for c in preferred_cols if c in df.columns] + [c for c in df.columns if c not in preferred_cols]
+        df = df[cols]
+
+        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.caption(f"📊 Gesamt: {len(df)} Geräte")
+    else:
+        st.info("Noch keine Geräte vorhanden.")
+
 
 
 # ==================== USE CASE 3: RESERVIERUNGSSYSTEM ====================
