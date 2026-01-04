@@ -66,21 +66,13 @@ def show_users():
     # Alle Nutzer anzeigen
     st.subheader("Alle Nutzer")
     
-    # DUMMY-DATEN 
-    dummy_users = pd.DataFrame([
-        {"Name": "Max Mustermann", "E-Mail": "max.mustermann@mci.edu"},
-        {"Name": "Anna Schmidt", "E-Mail": "anna.schmidt@mci.edu"},
-        {"Name": "Peter Huber", "E-Mail": "peter.huber@mci.edu"},
-        {"Name": "Lisa Müller", "E-Mail": "lisa.mueller@mci.edu"}
-    ])
-    
     st.dataframe(
-        dummy_users,
+        users,
         width='stretch',
         hide_index=True
     )
     
-    st.caption(f"Gesamt: {len(dummy_users)} Nutzer")
+    st.caption(f"Gesamt: {len(users)} Nutzer")
     
     # Aktionen
     st.markdown("---")
