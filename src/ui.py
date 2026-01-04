@@ -149,7 +149,7 @@ def show_devices():
         
         submitted = st.form_submit_button("✅ Gerät anlegen", width="stretch")
         
-         if submitted:
+        if submitted:
             # Pflichtfelder prüfen
             if not device_name or not responsible or not end_of_life:
                 st.error("❌ Bitte alle Pflichtfelder (*) ausfüllen!")
