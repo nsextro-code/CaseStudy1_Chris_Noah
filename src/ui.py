@@ -40,12 +40,12 @@ def show_users():
         submitted = st.form_submit_button("✅ Nutzer anlegen", width="stretch")
         
         if submitted:
-    if not email or not name:
-        st.error("❌ Bitte alle Pflichtfelder (*) ausfüllen!")
-        return
+            if not email or not name:
+            st.error("❌ Bitte alle Pflichtfelder (*) ausfüllen!")
+            return
 
-    if "@" not in email:
-        st.error("❌ Ungültige E-Mail-Adresse!")
+            if "@" not in email:
+            st.error("❌ Ungültige E-Mail-Adresse!")
         return
 
     db = Database()
