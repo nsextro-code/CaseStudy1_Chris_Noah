@@ -7,7 +7,59 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 from src.database import Database
+from src.servicelayer import UserService
+from src.servicelayer import DeviceManagementService
 from datetime import datetime, timedelta
+
+user_service = UserService()  # Service Layer instanziieren
+
+@st.dialog("Nutzer per E-Mail löschen")
+def delete_user_dialog():
+
+
+    # Eingabefeld für E-Mail
+    email = st.text_input(
+        "E-Mail des Nutzers eingeben",
+        placeholder="z.B. max.mustermann@mci.edu"
+    )
+
+    if st.button("Löschen"):
+        if not email:
+            st.warning("⚠️ Bitte eine E-Mail eingeben.")
+            return
+
+        # E-Mail in Kleinbuchstaben
+        email = email.strip().lower()
+        success, message = user_service.delete_user_by_email(email)
+
+        if success:
+            st.success(f"✅ {message}")
+        else:
+            st.warning(f"⚠️ {message}")
+
+@st.dialog("Nutzer bearbeiten")
+def edit_user_dialog():
+    # Eingabefelder
+    email = st.text_input(
+        "E-Mail des Nutzers eingeben",
+        placeholder="z.B. max.mustermann@mci.edu"
+    )
+    new_name = st.text_input(
+        "Neuer Name",
+        placeholder="z.B. Max Mustermann"
+    )
+
+    if st.button("Speichern"):
+        if not email or not new_name:
+            st.warning("⚠️ Bitte E-Mail und neuen Namen ausfüllen.")
+            return
+
+        success, message = user_service.update_user_name(email.strip().lower(), new_name)
+        if success:
+            st.success(f"✅ {message}")
+        else:
+            st.warning(f"⚠️ {message}")
+
 
 # ==================== USE CASE 1: NUTZERVERWALTUNG ====================
 def show_users():
@@ -27,35 +79,26 @@ def show_users():
         with col2:
             name = st.text_input(
                 "Name *",
-                placeholder="Max Mustermann",
+                placeholder="Max Mustermann", 
                 help="Vollständiger Name des Nutzers"
             )
 
         submitted = st.form_submit_button("✅ Nutzer anlegen", use_container_width=True)
 
         if submitted:
-            if not email or not name:
-                st.error("❌ Bitte alle Pflichtfelder (*) ausfüllen!")
-            elif "@" not in email:
-                st.error("❌ Ungültige E-Mail-Adresse!")
+            success, message = user_service.register_user(email, name)
+
+            if success:
+                st.success(f"✅ {message}")
+                st.info("💾 Daten wurden in der Datenbank gespeichert")
             else:
-                db = Database()
-
-                existing_user = db.users.search(lambda u: u.get("email") == email)
-
-                if existing_user:
-                    st.warning("⚠️ Nutzer mit dieser E-Mail existiert bereits.")
-                else:
-                    db.users.insert({"email": email, "name": name})
-                    st.success(f"✅ Nutzer **{name}** mit E-Mail **{email}** wurde angelegt!")
-                    st.info("💾 Daten wurden in der Datenbank gespeichert")
+                st.warning(f"⚠️ {message}")
 
     st.markdown("---")
     st.subheader("📋 Alle Nutzer")
 
-    db = Database()
-    users = db.users.all()
-
+    users = user_service.get_all_users()
+ 
     if users:
         st.dataframe(users, use_container_width=True)
     else:
@@ -71,11 +114,13 @@ def show_users():
     
     with col1:
         if st.button("🗑️ Nutzer löschen", width="stretch"):
-            st.warning("⚠️ Löschen-Funktion noch nicht implementiert")
+            delete_user_dialog()   # ✅ SO ist es richtig
+
     
     with col2:
         if st.button("✏️ Nutzer bearbeiten", width="stretch"):
-            st.warning("⚠️ Bearbeiten-Funktion noch nicht implementiert")
+            edit_user_dialog()  # Dialog wird geöffnet
+
     
     with col3:
         if st.button("🔄 Liste aktualisieren", width="stretch"):
@@ -91,115 +136,75 @@ def show_devices():
     
     st.subheader("Neues Gerät anlegen")
     
-    db = Database()
-    users = db.users.all()
-    user_emails = [u.get("email") for u in users] if users else []
+    
+    user_service = UserService()
+    device_service = DeviceManagementService()
+
+    users = user_service.get_all_users()
+    user_emails = [u["email"] for u in users] if users else []
 
     with st.form("device_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
-        
+
         with col1:
-            device_id = st.number_input(
-                "Inventarnummer *",
-                min_value=1,
-                step=1,
-                help="Eindeutige ID des Geräts"
-            )
-            device_name = st.text_input(
-                "Gerätename *",
-                placeholder="3D-Drucker Prusa MK4"
-            )
+            device_id = st.number_input("Inventarnummer *", min_value=1, step=1)
+            device_name = st.text_input("Gerätename *", placeholder="3D-Drucker Prusa MK4")
             if user_emails:
                 responsible = st.selectbox(
                     "Verantwortliche Person (E-Mail) *",
                     user_emails,
-                    help="Wählen Sie einen bestehenden Nutzer aus"
+                    help="Nur registrierte Nutzer können ausgewählt werden"
                 )
             else:
-                responsible = st.text_input(
-                    "Verantwortliche Person (E-Mail) *",
-                    placeholder="Bitte zuerst Nutzer anlegen",
-                    help="Es existieren noch keine Nutzer in der Datenbank."
-                )
                 st.warning("⚠️ Noch keine Nutzer vorhanden – bitte zuerst in der Nutzerverwaltung einen Nutzer anlegen.")
+                responsible = None  # Keine Auswahl möglich
 
+            end_of_life = st.date_input("End-of-Life Datum *")
 
-            end_of_life = st.date_input(
-                "End-of-Life Datum *",
-                help="Datum ab welchem das Gerät nicht mehr gewartet wird"
-            )
-        
         with col2:
-            first_maintenance = st.date_input(
-                "Erste Wartung *",
-                help="Datum der ersten Wartung"
-            )
-            maintenance_interval = st.number_input(
-                "Wartungsintervall (Tage) *",
-                min_value=1,
-                value=90,
-                help="Intervall zwischen Wartungen in Tagen"
-            )
-            maintenance_cost = st.number_input(
-                "Wartungskosten (€) *",
-                min_value=0.0,
-                value=150.0,
-                step=10.0,
-                help="Kosten pro Wartung"
-            )
-        
-        submitted = st.form_submit_button("✅ Gerät anlegen", width="stretch")
-        
+            first_maintenance = st.date_input("Erste Wartung *")
+            maintenance_interval = st.number_input("Wartungsintervall (Tage) *", min_value=1, value=90)
+            maintenance_cost = st.number_input("Wartungskosten (€) *", min_value=0.0, value=150.0, step=10.0)
+
+        submitted = st.form_submit_button("✅ Gerät anlegen")
+
         if submitted:
-            # Pflichtfelder prüfen
-            if not device_name or not responsible or not end_of_life:
-                st.error("❌ Bitte alle Pflichtfelder (*) ausfüllen!")
+            # Aufruf der Service-Methode
+            success, message = device_service.add_device(
+                device_id=device_id,
+                name=device_name,
+                responsible_email=responsible,
+                first_maintenance=first_maintenance,
+                maintenance_interval_days=maintenance_interval,
+                maintenance_cost_eur=maintenance_cost,
+                end_of_life=end_of_life
+            )
+
+            # Ausgabe
+            if success:
+                st.success(message)
             else:
-                # Device-ID prüfen (darf nicht doppelt sein)
-                existing = db.devices.search(lambda d: int(d.get("device_id", -1)) == int(device_id))
-                if existing:
-                    st.warning("⚠️ Ein Gerät mit dieser Inventarnummer existiert bereits.")
-                else:
-                    # nächste Wartung berechnen (optional, aber nice)
-                    next_maintenance = first_maintenance + timedelta(days=int(maintenance_interval))
+                st.error(message)
 
-                    db.devices.insert({
-                        "device_id": int(device_id),
-                        "name": device_name.strip(),
-                        "responsible_email": responsible.strip().lower(),
-                        "end_of_life": end_of_life.isoformat(),
-                        "first_maintenance": first_maintenance.isoformat(),
-                        "maintenance_interval_days": int(maintenance_interval),
-                        "maintenance_cost_eur": float(maintenance_cost),
-                        "next_maintenance": next_maintenance.isoformat(),
-                        "created_at": datetime.now().isoformat(timespec="seconds"),
-                        "last_update": datetime.now().isoformat(timespec="seconds")
-                    })
 
-                    st.success(f"✅ Gerät **{device_name}** mit ID **{int(device_id)}** wurde gespeichert!")
-                    st.info("💾 Daten wurden in der Datenbank gespeichert")
+        
+        st.markdown("---")
+        st.subheader("Alle Geräte")
+        devices = device_service.get_all_devices()  # Holt alle Geräte über den Service
 
-    
-    st.markdown("---")
-    st.subheader("Alle Geräte")
-    
-    # DUMMY-DATEN (später durch echte Datenbank ersetzen)
-    devices = db.devices.all()
-    if devices:
-        df = pd.DataFrame(devices)
+        if devices:
+            import pandas as pd
+            df = pd.DataFrame(devices)
 
-        # optional: hübschere Spaltenreihenfolge, falls vorhanden
-        preferred_cols = [
-            "device_id", "name", "responsible_email",
-            "next_maintenance", "maintenance_cost_eur", "end_of_life"
-        ]
-        cols = [c for c in preferred_cols if c in df.columns] + [c for c in df.columns if c not in preferred_cols]
-        df = df[cols]
+            preferred_cols = ["device_id", "name", "responsible_email",
+                            "next_maintenance", "maintenance_cost_eur", "end_of_life"]
+            cols = [c for c in preferred_cols if c in df.columns] + [c for c in df.columns if c not in preferred_cols]
+            df = df[cols]
 
-        st.dataframe(df, use_container_width=True, hide_index=True)
-        st.caption(f"📊 Gesamt: {len(df)} Geräte")
-    else:
-        st.info("Noch keine Geräte vorhanden.")
+            st.dataframe(df, use_container_width=True, hide_index=True)
+            st.caption(f"📊 Gesamt: {len(df)} Geräte")
+        else:
+            st.info("Noch keine Geräte vorhanden.")
 
 
 
